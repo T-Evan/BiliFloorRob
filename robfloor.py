@@ -35,11 +35,11 @@ class BILI(object):
         request_retry = HTTPAdapter(max_retries=3)
         self.s.mount('http://', request_retry)
 
-    def get_comment_num(self, av_num, desc_type):
+    def get_comment(self, av_num, desc_type):
         header = {
             'Accept': '*/*',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Accept-Language': 'zh-CN,zh;q=0.9',
+            # 'Accept-Encoding': 'gzip, deflate, br',
+            # 'Accept-Language': 'zh-CN,zh;q=0.9',
             'Cache-Control': 'max-age=0',
             'Connection': 'keep-alive',
             'Upgrade-Insecure-Requests': '1',
@@ -47,23 +47,74 @@ class BILI(object):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36',
             'Host': 'api.bilibili.com'
         }
-        reply_type = 0
+        reply_type = desc_type
         try:
-            if desc_type == 16:
-                reply_type = 5
-            elif desc_type == 2:
-                reply_type = 11
-            elif desc_type == 4 or desc_type == 1:
-                reply_type = 17
-            elif desc_type == 8:
-                reply_type = 1
             r = self.s.get(
-                'http://api.bilibili.com/x/v2/reply?jsonp=jsonp&pn=1&type=' + str(reply_type) + '&sort=0&oid=' + av_num,
+                'http://api.bilibili.com/x/v2/reply?jsonp=jsonp&pn=1&type=' + str(reply_type) + '&sort=0&oid=' + str(av_num),
                 headers=header)
             replies = r.json()['code']
             if replies == 0:  # 继续判断是否为转发动态
-                if r.json()['data']['replies']:
-                    return (r.json()['data']['replies'][0]['floor'], reply_type)
+                return 
+            else:
+                return "get_comment unkown desc_type"
+        except Exception as e:
+            print(e)
+            print(r)
+            # exit()
+
+    def get_dynamic(self, av_num, desc_type):
+        header = {
+            'Accept': '*/*',
+            # 'Accept-Encoding': 'gzip, deflate, br',
+            # 'Accept-Language': 'zh-CN,zh;q=0.9',
+            'Cache-Control': 'max-age=0',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Cookie': self.Cookie,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36',
+            'Host': 'api.bilibili.com'
+        }
+        reply_type = desc_type
+        try:
+            r = self.s.get(
+                'https://api.bilibili.com/x/polymer/web-dynamic/v1/detail&id=' + str(av_num),
+                headers=header)
+            replies = r.json()['code']
+            if replies == 0:  # 继续判断是否为转发动态
+                upName = r.json()['data']['items'][0]['modules']['module_author']['name']
+                avType = r.json()['data']['items'][0]['modules']['module_dynamic']['major']['archive']['badge']['text']
+                avTitle = r.json()['data']['items'][0]['modules']['module_dynamic']['major']['archive']['title']
+                avDesc = r.json()['data']['items'][0]['modules']['module_dynamic']['major']['archive']['desc']
+                return upName, avType, avTitle, avDesc
+            else:
+                return "get_comment unkown desc_type"
+        except Exception as e:
+            print(e)
+            print(r)
+            # exit()
+
+    def get_comment_num(self, av_num, desc_type):
+        header = {
+            'Accept': '*/*',
+            # 'Accept-Encoding': 'gzip, deflate, br',
+            # 'Accept-Language': 'zh-CN,zh;q=0.9',
+            'Cache-Control': 'max-age=0',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Cookie': self.Cookie,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36',
+            'Host': 'api.bilibili.com'
+        }
+        reply_type = desc_type
+        try:
+            uri = 'http://api.bilibili.com/x/v2/reply/count?jsonp=jsonp&type=' + str(reply_type) + '&oid=' + av_num
+            r = self.s.get(
+                uri,
+                headers=header)
+            replies = r.json()['code']
+            if replies == 0:  # 继续判断是否为转发动态
+                if r.json()['data']['count'] >= 0:
+                    return (r.json()['data']['count'], reply_type)
                 else:
                     return 0, reply_type
             else:
@@ -71,13 +122,15 @@ class BILI(object):
         except Exception as e:
             print(e)
             print(r)
+            print(r.raw)
+            print(uri)
             # exit()
 
-    def send_comment(self, av_num, message, reply_type):
+    def send_comment(self, av_num, message, reply_type, upName, avType, avTitle, avDesc):
         header = {
             'Accept': 'application/json, text/plain, */*',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Accept-Language': 'zh-CN,zh;q=0.9',
+            # 'Accept-Encoding': 'gzip, deflate, br',
+            # 'Accept-Language': 'zh-CN,zh;q=0.9',
             'Cache-Control': 'max-age=0',
             'Content-Length': '106',
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -120,6 +173,9 @@ class BILI(object):
             r = self.s.post(comment_url, headers=header, data=post_data)
             if r.json()['code'] == 0:
                 print('ok')
+                pushLink = "http://www.pushplus.plus/send?token=&title=bilibili抢楼&template=html"
+                pushLink = "http://www.pushplus.plus/send?token=&title=bilibili抢楼&content=up主[" + upName + "]" + avType + "[" + avTitle + "]" + "[" + avDesc + "]" + "&template=html"
+                r = self.s.get(pushLink)
             else:
                 print('error')
                 print(r.json())
@@ -145,17 +201,21 @@ class BILI(object):
         #     r = self.s.get(url, headers=header)
         #     av_num = r.json()['data']['feeds'][0]['add_id']
         #     return str(av_num)
-        url = "https://api.vc.bilibili.com/dynamic_svr/v1/dynamic_svr/dynamic_new?uid=326196181&type=268435455"
+        url = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/all?type=video"
         try:
             # r = self.s.get(url, proxies={'http': random.choice(pro)},  headers=header)
             r = self.s.get(url, headers=header)
-            desc_type = r.json()['data']['cards'][0]['desc']['type']
-            if desc_type == 8 or desc_type == 2 or desc_type == 16 or desc_type == 64:
-                return str(r.json()['data']['cards'][0]['desc']['rid']), desc_type
-            elif desc_type == 1 or desc_type == 4: #1为转发动态，4为纯文字动态，暂时无法获取用于评论的动态id
-                return str(r.json()['data']['cards'][0]['desc']['dynamic_id_str']), desc_type
+            desc_type = r.json()['data']['items'][0]['basic']['comment_type']
+            upName = r.json()['data']['items'][0]['modules']['module_author']['name']
+            avType = r.json()['data']['items'][0]['modules']['module_dynamic']['major']['archive']['badge']['text']
+            avTitle = r.json()['data']['items'][0]['modules']['module_dynamic']['major']['archive']['title']
+            avDesc = r.json()['data']['items'][0]['modules']['module_dynamic']['major']['archive']['desc']
+            if desc_type == 1 or desc_type == 17 or desc_type == 12 :
+                return str(r.json()['data']['items'][0]['basic']['comment_id_str']), desc_type, upName, avType, avTitle, avDesc
+            elif desc_type == 11 or desc_type == 19: #1为转发动态，4为纯文字动态，暂时无法获取用于评论的动态id
+                return str(r.json()['data']['items'][0]['basic']['comment_id_str']), desc_type, upName, avType, avTitle, avDesc
                 # return ("unkown"),desc_type
-                av_num = r.json()['data']['cards'][0]['card']
+                av_num = r.json()['data']['items'][0]['card']
                 searchObj = re.search(r'(dynamic_id.*\d*)', av_num, re.M | re.I)
                 if searchObj:
                     searchObj = re.findall(r'\d+', searchObj.group(1))
@@ -169,11 +229,11 @@ class BILI(object):
             # exit()
 
     # 快速模式，慢速模式。。
-    def run(self, av_num=None, floor=0, content=None, award=False):
-
+    def run(self, av_num=None, floor=0, content=None, award=False, reply_type=0):
         if content is None:
             # '1楼精准打击～没有人能在我的关注里打败我，大大的flag233'
             content = "多线程~" + str(floor) + '楼精准打击～'
+        # 指定抽奖动态盖楼抢楼
         if award is True and av_num is not None:
             while 1:
                 topfloor = self.get_comment_num(av_num)
@@ -196,27 +256,34 @@ class BILI(object):
                 #     time.sleep(10)
                 #     continue
                 time.sleep(50)
+        # 最新动态抢楼
         if award is False and av_num is None:
+            exist = ''
             while 1:
-                av_num, desc_type = self.get_newest()
+                av_num, desc_type, upName, avType, avTitle, avDesc = self.get_newest()
                 if av_num == "unkown":
                     print(av_num)
-                    time.sleep(10)
+                    time.sleep(30)
                 else:
                     print(av_num)
                     (comment_num, reply_type) = self.get_comment_num(av_num, desc_type)
                     print(comment_num)
-                    if comment_num < 2:
-                        self.send_comment(av_num, content, reply_type)
-                time.sleep(10)
+                    if comment_num < 1 and exist != av_num:
+                        # 随机评论，避免被吞
+                        content = random.choice(['先赞后看(｀・ω・´)~', '已阅(o゜▽゜)o☆', '好看爱看(๑•̀ㅂ•́)و✧'])
+                        self.send_comment(av_num, content, reply_type, upName, avType, avTitle, avDesc)
+                        exist = av_num
+                time.sleep(30)
+        # 指定动态 + 指定楼层
         else:
+            floor = 55
             if floor != 0:
                 while 1:
-                    comment_num = self.get_comment_num(av_num)
+                    comment_num, reply_type = self.get_comment_num(av_num, reply_type)
                     print("now is " + time.asctime(time.localtime(time.time())))
                     print("comment-num:" + str(comment_num))
                     if comment_num + 1 == floor:
-                        self.send_comment(av_num, content)
+                        self.send_comment(av_num, content, reply_type)
                         break
                     if comment_num >= floor:
                         print('被别人抢了。。')
@@ -228,15 +295,16 @@ class BILI(object):
 cookies = ""
 csrf = ""
 
-
-
 def task(cookies, csrf):
     bi = BILI(cookies, csrf)
     bi.run(content="(｀・ω・´)~")
+    #upName, avType, avTitle, avDesc = bi.get_dynamic(1101219192, 1)
     # bi.run(av_num='24075101',floor=313,content="biu~")
     # bi.run(av_num='4265329',content="祝福~", award=True)
     # bi.run('8562550', floor=266)
-    # print bi.get_comment_num(bi.get_newest())
+    #av_num, reply_type =  bi.get_newest()
+    # reply_count = bi.get_comment_num(av_num, reply_type)
+    #bi.run(av_num, floor=101, content="biu~", award=False, reply_type=reply_type)
     # bi.send_comment(bi.get_newest(),"什么")
     # bi.run(floor=1)
     # bi.run()
