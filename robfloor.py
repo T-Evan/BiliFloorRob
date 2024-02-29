@@ -27,10 +27,12 @@ def read_cookie(cookiepath):
 
 
 class BILI(object):
-    def __init__(self, Cookie, csrf):
+    def __init__(self, Cookie, csrf, pushPlusToken, serverPushToken):
         self.s = requests.Session()
         self.Cookie = Cookie
         self.csrf = csrf
+        self.pushPlusToken = pushPlusToken
+        self.serverPushToken = serverPushToken
         # 重试
         request_retry = HTTPAdapter(max_retries=3)
         self.s.mount('http://', request_retry)
@@ -173,7 +175,8 @@ class BILI(object):
             r = self.s.post(comment_url, headers=header, data=post_data)
             if r.json()['code'] == 0:
                 print('ok')
-                # pushPlusLink = "http://www.pushplus.plus/send?token=" + self.pushPlusToken  +"&title=bilibili抢楼&content=up主[" + upName + "]" + avType + "[" + avTitle + "]" + "[" + avDesc + "]" + "&template=html"
+                pushPlusLink = "http://www.pushplus.plus/send?token=" + self.pushPlusToken  +"&title=bilibili抢楼&content=up主[" + upName + "]" + avType + "[" + avTitle + "]" + "[" + avDesc + "]" + "&template=html"
+                r = self.s.get(pushPlusLink)
                 serverPushLink = "https://sctapi.ftqq.com/" + self.serverPushToken  +".send?title=bilibili抢楼&desp=up主[" + upName + "]" + avType + "[" + avTitle + "]" + "[" + avDesc + "]"
                 r = self.s.get(serverPushLink)
             else:
@@ -299,8 +302,8 @@ csrf = ""
 pushPlusToken = ""
 serverPushToken = "" 
 
-def task(cookies, csrf):
-    bi = BILI(cookies, csrf)
+def task(cookies, csrf, pushPlusToken, serverPushToken):
+    bi = BILI(cookies, csrf, pushPlusToken, serverPushToken)
     bi.run(content="(｀・ω・´)~")
     #upName, avType, avTitle, avDesc = bi.get_dynamic(1101219192, 1)
     # bi.run(av_num='24075101',floor=313,content="biu~")
@@ -317,7 +320,7 @@ def task(cookies, csrf):
 
 pool = ThreadPool(1)
 for i in xrange(1):
-    result = pool.apply_async(task, (cookies, csrf,))
+    result = pool.apply_async(task, (cookies, csrf, pushPlusToken, serverPushToken))
     time.sleep(1)
 pool.close()
 pool.join()
