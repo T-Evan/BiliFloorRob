@@ -173,9 +173,9 @@ class BILI(object):
             r = self.s.post(comment_url, headers=header, data=post_data)
             if r.json()['code'] == 0:
                 print('ok')
-                pushLink = "http://www.pushplus.plus/send?token=&title=bilibili抢楼&template=html"
-                pushLink = "http://www.pushplus.plus/send?token=&title=bilibili抢楼&content=up主[" + upName + "]" + avType + "[" + avTitle + "]" + "[" + avDesc + "]" + "&template=html"
-                r = self.s.get(pushLink)
+                # pushPlusLink = "http://www.pushplus.plus/send?token=" + self.pushPlusToken  +"&title=bilibili抢楼&content=up主[" + upName + "]" + avType + "[" + avTitle + "]" + "[" + avDesc + "]" + "&template=html"
+                serverPushLink = "https://sctapi.ftqq.com/" + self.serverPushToken  +".send?title=bilibili抢楼&desp=up主[" + upName + "]" + avType + "[" + avTitle + "]" + "[" + avDesc + "]"
+                r = self.s.get(serverPushLink)
             else:
                 print('error')
                 print(r.json())
@@ -270,7 +270,7 @@ class BILI(object):
                     print(comment_num)
                     if comment_num < 1 and exist != av_num:
                         # 随机评论，避免被吞
-                        content = random.choice(['先赞后看(｀・ω・´)~', '已阅(o゜▽゜)o☆', '好看爱看(๑•̀ㅂ•́)و✧'])
+                        content = random.choice(['先赞后看(｀・ω・´)~', '已阅(o゜▽゜)o☆', '好看爱看(๑•̀ㅂ•́)و✧', '前来支持ฅʕ•̫͡•ʔฅ', '每集必看 ( ´͈ ᵕ ͈ )◞♡', '今日打卡ฅ՞• •՞ฅ', '不错不错₍ᐢ •̥ ̫ •̥ ᐢ₎'])
                         self.send_comment(av_num, content, reply_type, upName, avType, avTitle, avDesc)
                         exist = av_num
                 time.sleep(30)
@@ -293,7 +293,11 @@ class BILI(object):
 
 # cookies = read_cookie('./bilicookies')[0]
 cookies = ""
+# 发送评论需使用csrf，可从cookie获取
 csrf = ""
+# 推送平台配置
+pushPlusToken = ""
+serverPushToken = "" 
 
 def task(cookies, csrf):
     bi = BILI(cookies, csrf)
