@@ -273,7 +273,7 @@ class BILI(object):
                     print(comment_num)
                     if comment_num < 1 and exist != av_num:
                         # 随机评论，避免被吞
-                        content = random.choice(['先赞后看(｀・ω・´)~', '已阅(o゜▽゜)o☆', '好看爱看(๑•̀ㅂ•́)و✧', '前来支持ฅʕ•̫͡•ʔฅ', '每集必看 ( ´͈ ᵕ ͈ )◞♡', '今日打卡ฅ՞• •՞ฅ', '不错不错₍ᐢ •̥ ̫ •̥ ᐢ₎'])
+                        content = random.choice(['先赞后看(｀・ω・´)~', '已阅(o゜▽゜)o☆', '好看爱看(๑•̀ㅂ•́)و✧', '前来支持ฅʕ•̫͡•ʔฅ', '每集必看 ( ´͈ ᵕ ͈ )◞♡', '今日打卡ฅ՞• •՞ฅ', '不错不错₍ᐢ •̥ ̫ •̥ ᐢ₎', '不愧是你( ⁼̴̀ .̫ ⁼̴ )✧', '每日必看 ( ´͈ ᵕ ͈ )◞♡', '好看好看 ( ´͈ ᵕ ͈ )◞♡'])
                         self.send_comment(av_num, content, reply_type, upName, avType, avTitle, avDesc)
                         exist = av_num
                 time.sleep(30)
